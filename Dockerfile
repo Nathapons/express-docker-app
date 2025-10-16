@@ -34,7 +34,7 @@ COPY --from=builder /app/dist ./dist
 # COPY --from=builder /app/src ./src
 
 # กำหนด Port ที่ Container จะทำงาน
-EXPOSE 3000
+EXPOSE 3060
 
 # คำสั่งสำหรับรัน Express Application (ใช้ compiled JavaScript)
 CMD ["npm", "start"]
