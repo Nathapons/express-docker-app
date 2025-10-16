@@ -1,6 +1,5 @@
 pipeline {
-    // ใช้ agent any เพราะ Jenkins ไม่รองรับ Docker agent
-    agent any
+    agent any // <--- Pipeline นี้ถูกออกแบบให้รันบน Agent/Server ที่มี Docker ติดตั้ง
 
     // กำหนด environment variables
     environment {
@@ -30,6 +29,7 @@ pipeline {
                             docker run --rm -v "$PWD":/app -w /app node:18-alpine sh -c "npm install && npm test"
                         '''
                     } else {
+                        // แจ้งเตือนว่า Docker ไม่พร้อมใช้งาน
                         echo "Docker not available, skipping tests. Please install Docker on Jenkins agent."
                         echo "Tests will be skipped in this build."
                     }
@@ -37,12 +37,12 @@ pipeline {
             }
         }
 
-        // Stage 3: สร้าง Docker Image
+        // Stage 3: Build Docker Image (ใช้ docker build)
         stage('Build Docker Image') {
             steps {
                 sh """
                     echo "Building Docker image: ${DOCKER_REPO}:${BUILD_NUMBER}"
-                    docker build --target production -t ${DOCKER_REPO}:${BUILD_NUMBER} -t ${DOCKER_REPO}:latest .
+                    docker build --target production -t ${DOCKER_REPO}:${BUILD_NUMBER} -t ${DOCKER_REPO}:latest . // <-- คำสั่งนี้หาไม่เจอ
                 """
             }
         }
