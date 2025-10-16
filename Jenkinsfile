@@ -20,33 +20,17 @@ pipeline {
             }
         }
 
-        // Stage 2: ติดตั้ง Node.js และ npm
-        stage('Setup Node.js') {
-            steps {
-                sh '''
-                    # ตรวจสอบว่ามี Node.js อยู่แล้วหรือไม่
-                    if ! command -v node &> /dev/null; then
-                        echo "Installing Node.js..."
-                        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-                        apt-get install -y nodejs
-                    else
-                        echo "Node.js already installed: $(node --version)"
-                    fi
-                '''
-            }
-        }
-
-        // Stage 3: ติดตั้ง dependencies และรันเทสต์
+        // Stage 2: ติดตั้ง dependencies และรันเทสต์ใน Node.js container
         stage('Install & Test') {
             steps {
                 sh '''
-                    npm install
-                    npm test
+                    # ใช้ Docker run เพื่อรัน npm ใน Node.js container
+                    docker run --rm -v "$PWD":/app -w /app node:18-alpine sh -c "npm install && npm test"
                 '''
             }
         }
 
-        // Stage 4: สร้าง Docker Image
+        // Stage 3: สร้าง Docker Image
         stage('Build Docker Image') {
             steps {
                 sh """
@@ -56,7 +40,7 @@ pipeline {
             }
         }
 
-        // Stage 5: Push Image ไปยัง Docker Hub
+        // Stage 4: Push Image ไปยัง Docker Hub
         stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: env.DOCKER_HUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -72,7 +56,7 @@ pipeline {
             }
         }
 
-        // Stage 6: เคลียร์ Docker images บน agent
+        // Stage 5: เคลียร์ Docker images บน agent
         stage('Cleanup Docker') {
             steps {
                 sh """
@@ -85,7 +69,7 @@ pipeline {
             }
         }
 
-        // Stage 7: Deploy ไปยังเครื่อง local
+        // Stage 6: Deploy ไปยังเครื่อง local
         stage('Deploy Local') {
             steps {
                 sh """
@@ -99,7 +83,7 @@ pipeline {
             }
         }
 
-        // Stage 8: Deploy ไปยังเครื่อง remote server (ถ้ามี)
+        // Stage 7: Deploy ไปยังเครื่อง remote server (ถ้ามี)
         // ต้องตั้งค่า SSH Key และอนุญาตให้ Jenkins เข้าถึง server
         // stage('Deploy to Server') {
         //     steps {
