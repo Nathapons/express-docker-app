@@ -1,6 +1,11 @@
 pipeline {
-    // ใช้ agent any เพราะ build จะทำงานบน Jenkins controller (Linux container) อยู่แล้ว
-    agent any
+    // ใช้ Node.js Docker agent เพื่อให้มี npm พร้อมใช้งาน
+    agent {
+        docker {
+            image 'node:18-alpine'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     // กำหนด environment variables
     environment {
