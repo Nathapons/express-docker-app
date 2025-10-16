@@ -23,15 +23,17 @@ pipeline {
         stage('Install & Test') {
             steps {
                 script {
+                    // เพิ่มการตรวจสอบ PATH และแสดงผล
+                    sh 'echo "Current PATH is: $PATH"'
+                    sh 'echo "Searching for docker executable..."'
+                    
                     def dockerAvailable = sh(script: 'which docker', returnStatus: true) == 0
+                    
                     if (dockerAvailable) {
-                        sh '''
-                            docker run --rm -v "$PWD":/app -w /app node:18-alpine sh -c "npm install && npm test"
-                        '''
+                        // ... (โค้ดเดิม)
                     } else {
-                        // แจ้งเตือนว่า Docker ไม่พร้อมใช้งาน
                         echo "Docker not available, skipping tests. Please install Docker on Jenkins agent."
-                        echo "Tests will be skipped in this build."
+                        // ... (โค้ดเดิม)
                     }
                 }
             }
