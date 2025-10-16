@@ -1,0 +1,10 @@
+pipeline {
+  
+    // ใช้ any agent เพื่อหลีกเลี่ยงปัญหา Docker path mounting บน Windows
+    agent any
+
+    // กำหนด environment variables
+    environment {
+        // ใช้ค่าเป็น "credentialsId" ของ Jenkins โดยตรงสำหรับ docker.withRegistry
+        DOCKER_HUB_CREDENTIALS_ID = 'dockerhub-cred'
+        DOCKER_R
