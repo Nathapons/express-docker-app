@@ -1,5 +1,5 @@
 pipeline {
-    // ใช้ agent any เพราะ Jenkins ไม่รองรับ Docker agent
+    // ใช้ agent any เพราะ build จะทำงานบน Jenkins controller (Linux container) อยู่แล้ว
     agent any
 
     // กำหนด environment variables
@@ -20,31 +20,13 @@ pipeline {
             }
         }
 
-        // Stage 2: ติดตั้ง dependencies และรันเทสต์ใน Node.js container
+        // Stage 2: ติดตั้ง dependencies และรันเทสต์
         stage('Install & Test') {
             steps {
-                script {
-                    // เพิ่มการตรวจสอบ PATH และ Docker ให้ละเอียดขึ้นสำหรับการดีบั๊ก
-                    sh 'echo "Current PATH is: $PATH"'
-                    sh 'echo "Attempting to locate Docker..."'
-                    
-                    // ใช้ 'which docker' เพื่อตรวจสอบว่าคำสั่ง Docker อยู่ใน PATH หรือไม่
-                    def dockerAvailable = sh(script: 'which docker', returnStatus: true) == 0
-                    
-                    if (dockerAvailable) {
-                        echo "Docker is available. Running npm install and tests inside Node.js container."
-                        sh '''
-                            docker run --rm -v "$PWD":/app -w /app node:18-alpine sh -c "npm install && npm test"
-                        '''
-                    } else {
-                        // ถ้า Docker ไม่พร้อมใช้งาน จะข้ามส่วนนี้และแจ้งเตือน
-                        echo "========================================================================="
-                        echo "🚫 Docker NOT available. Please install Docker and ensure the 'jenkins' user"
-                        echo "   has permission (e.g., added to 'docker' group) on the Jenkins Agent/Server."
-                        echo "   Tests will be skipped in this build. Subsequent Docker stages may fail."
-                        echo "========================================================================="
-                    }
-                }
+                sh '''
+                    npm install
+                    npm test
+                '''
             }
         }
 
@@ -53,7 +35,6 @@ pipeline {
             steps {
                 sh """
                     echo "Building Docker image: ${DOCKER_REPO}:${BUILD_NUMBER}"
-                    // Docker build จะล้มเหลวที่นี่ถ้า Docker ยังเข้าถึงไม่ได้
                     docker build --target production -t ${DOCKER_REPO}:${BUILD_NUMBER} -t ${DOCKER_REPO}:latest .
                 """
             }
@@ -88,7 +69,7 @@ pipeline {
             }
         }
 
-        // Stage 6: Deploy ไปยังเครื่อง local (Jenkins Agent)
+        // Stage 6: Deploy ไปยังเครื่อง local
         stage('Deploy Local') {
             steps {
                 sh """
@@ -102,14 +83,35 @@ pipeline {
             }
         }
 
-        // Stage 7: Deploy ไปยังเครื่อง remote server (ถูกคอมเมนต์ไว้)
+        // Stage 7: Deploy ไปยังเครื่อง remote server (ถ้ามี)
         // ต้องตั้งค่า SSH Key และอนุญาตให้ Jenkins เข้าถึง server
-        /*
-        stage('Deploy to Server') {
-             steps {
-                 // ... (โค้ดเดิม)
-             }
-        }
-        */
+        // stage('Deploy to Server') {
+        //     steps {
+        //         script {
+        //             def isWindows = isUnix() ? false : true
+        //             echo "Deploying to remote server..."
+        //             if (isWindows) {
+        //                 bat """
+        //                     ssh -o StrictHostKeyChecking=no user@your-server-ip \\
+        //                     'docker pull ${DOCKER_REPO}:latest && \\
+        //                     docker stop ${APP_NAME} || echo ignore && \\
+        //                     docker rm ${APP_NAME} || echo ignore && \\
+        //                     docker run -d --name ${APP_NAME} -p 3000:3000 ${DOCKER_REPO}:latest && \\
+        //                     docker ps --filter name=${APP_NAME} --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"'
+        //                 """
+        //             } else {
+        //                 sh """
+        //                     ssh -o StrictHostKeyChecking=no user@your-server-ip \\
+        //                     'docker pull ${DOCKER_REPO}:latest && \\
+        //                     docker stop ${APP_NAME} || true && \\
+        //                     docker rm ${APP_NAME} || true && \\
+        //                     docker run -d --name ${APP_NAME} -p 3000:3000 ${DOCKER_REPO}:latest && \\
+        //                     docker ps --filter name=${APP_NAME} --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"'
+        //                 """
+        //             }
+        //         }
+        //     }
+        // }
+
     }
 }
