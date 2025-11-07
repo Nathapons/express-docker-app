@@ -49,7 +49,7 @@ pipeline {
             steps {
                 sh """
                     echo "Building Docker image: ${DOCKER_REPO}:${BUILD_NUMBER}"
-                    sudo docker build --target production -t ${DOCKER_REPO}:${BUILD_NUMBER} -t ${DOCKER_REPO}:latest .
+                    docker build --target production -t ${DOCKER_REPO}:${BUILD_NUMBER} -t ${DOCKER_REPO}:latest .
                 """
             }
         }
